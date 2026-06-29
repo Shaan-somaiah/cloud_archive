@@ -39,3 +39,28 @@ def getSnapshot():
         return None
 
 
+def deleteSnapshot(snapshot_list):
+    try:
+        for snapshot in snapshot_list:
+            delete_snapshot_result = subprocess.run(
+                [ zfs, "destroy", snapshot ],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            print("Deleted " + snapshot)
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        print(e.stderr)
+    
+
+def main():
+    snapshot_list = getSnapshot()
+
+    if snapshot_list is not None:
+        deleteSnapshot(snapshot_list)
+
+
+main()
