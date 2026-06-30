@@ -10,4 +10,4 @@ kopia = "/usr/bin/kopia"
 rclone = "/usr/bin/rclone"
 zfs = "/usr/sbin/zfs"
 
-snapshot_name_prefix = "kopia_scheduled"
+snapshot_name_prefix = "kopia_managed"

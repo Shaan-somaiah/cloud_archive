@@ -17,7 +17,7 @@ def lock():
 
         if current_pid != lock_file_pid:
             if Path(f"/proc/{lock_file_pid}/").exists():
-                if "kopia_backup.py" in Path(f"/proc/{lock_file_pid}/cmdline").read_text():
+                if "archive.py" in Path(f"/proc/{lock_file_pid}/cmdline").read_text():
                     print(f"Backup script already running with {lock_file_pid}, exiting this instance")
                     sys.exit(3)
         
@@ -39,4 +39,3 @@ def unlock():
         sys.exit(1)
     
     lock_file.unlink()
-    

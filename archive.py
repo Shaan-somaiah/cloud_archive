@@ -2,7 +2,7 @@ import zfs_snapshot
 from config import zpools, snapshot_name_prefix
 import lock
 from datetime import datetime
-import kopia_engine
+import kopia
 
 
 def main():
@@ -17,19 +17,27 @@ def main():
                 print(f"Existing snapshots found: {snapshot_list}")
                 zfs_snapshot.deleteSnapshot(snapshot_list)
 
-        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        snapshots_to_backup = []
+        archive_paths = []
 
         for pool,datasets in zpools.items():
             for dataset in datasets:
-                snapshot_name = f"{snapshot_name_prefix}_{dataset}_{current_time}"
+                ## Not including timestamp in snapshot name as it creates a seperate chain in kopia
+                snapshot_name = f"{snapshot_name_prefix}_{dataset}"
                 full_dataset_path = f"{pool}/{dataset}"
                 full_snapshot_name = f"{full_dataset_path}@{snapshot_name}"
+                full_clone_name = f"{pool}/clone_{snapshot_name_prefix}_{dataset}"
                 zfs_snapshot.takeSnapshot(full_snapshot_name)
-                snapshots_to_backup.append(f"/{full_dataset_path}/.zfs/snapshot/{snapshot_name}")
 
-        for snapshot_path in snapshots_to_backup:
-            kopia_engine.backup(snapshot_path)
+                ## There seems to be some bug within kopia/zfs where kopia cannot enumerate the contents of snapshot directory within .zfs virual filesystem
+                ## on the first attempt, this causes kopia to miss items during archival. Cloning the snapshot to a read only dataset will evade this issue as
+                ## a read only dataset is mounted as a regular zfs filesystem
+
+                zfs_snapshot.cloneSnapshot(full_snapshot_name, full_clone_name)
+                archive_paths.append(f"/{full_clone_name}")
+        
+
+        for archive_path in archive_paths:
+            kopia.archive(archive_path)
 
     finally:
         lock.unlock()
