@@ -1,9 +1,10 @@
-datasets = [ "pbs",
-             "kube_vol",
-             "common"
-            ]
-
-dataset_root_paths = ["dump/main/"]
+zpools = {
+    "dump/main": [
+        "pbs",
+        "common",
+        "kube_vol"
+    ]
+}
 
 kopia = "/usr/bin/kopia"
 rclone = "/usr/bin/rclone"
