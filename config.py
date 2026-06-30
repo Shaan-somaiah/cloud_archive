@@ -1,12 +1,10 @@
-from pathlib import Path
-
 
 datasets = [ "pbs",
              "kube_vol",
              "common"
             ]
 
-dataset_root_path = Path("/dump/main/")
+dataset_root_paths = ["dump/main/"]
 
 kopia = "/usr/bin/kopia"
 rclone = "/usr/bin/rclone"

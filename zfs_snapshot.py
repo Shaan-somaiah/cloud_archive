@@ -1,5 +1,6 @@
 from config import zfs
 from config import snapshot_name_prefix
+from config import dataset_root_paths
 import subprocess
 
 def getSnapshot():
@@ -20,9 +21,13 @@ def getSnapshot():
             snapshots_list=[]
             lines = list_snapshot_results[0].splitlines()
             for line in lines:
-                if "dump" in line and "@" in line:
-                    snapshot_name = line.split()
-                    snapshots_list.append(snapshot_name[0])
+                for dataset in dataset_root_paths:
+                    if dataset in line and "@" in line:
+                        snapshot_name = line.split()
+                        snapshots_list.append(snapshot_name[0])
+            
+            if len(snapshots_list) == 0: 
+                print("No existing managed snapshot found")
             
             return snapshots_list
     
@@ -37,7 +42,7 @@ def deleteSnapshot(snapshot_list):
     for snapshot in snapshot_list:
         try:
             if "@" not in snapshot or snapshot_name_prefix not in snapshot:
-                print(f"Refusing to destroy unmanaged snapshot: {snapshot}")
+                print(f"Refusing to delete unmanaged snapshot: {snapshot}")
                 continue
             delete_snapshot_result = subprocess.run(
                 [ zfs, "destroy", snapshot ],
@@ -46,9 +51,10 @@ def deleteSnapshot(snapshot_list):
                 check=True
             )
             
-            print("Deleted " + snapshot)
+            print("Deleted managed snapshot : " + snapshot)
         
         except subprocess.CalledProcessError as e:
             print(f"Command failed with exit code {e.returncode}")
             print(e.stderr)
     
+    print("No managed snapshots left to delete")
