@@ -1,6 +1,5 @@
 zpools = {
     "dump/main": [
-        "pbs",
         "common",
         "kube_vol"
     ]
@@ -11,3 +10,4 @@ rclone = "/usr/bin/rclone"
 zfs = "/usr/sbin/zfs"
 
 snapshot_name_prefix = "kopia_managed"
+clone_name_prefix = "clone_kopia_managed"
