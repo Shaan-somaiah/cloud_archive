@@ -58,3 +58,22 @@ def deleteSnapshot(snapshot_list):
             print(e.stderr)
     
     print("No managed snapshots left to delete")
+
+
+def takeSnapshot(full_dataset, full_snapshot_name):
+    try:
+        snapshot_cmd = f"{full_dataset}@{full_snapshot_name}"
+        take_snapshot_result = subprocess.run(
+            [ zfs, "snapshot", snapshot_cmd],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        if take_snapshot_result.stdout == "":
+            print(f"Took snapshot {snapshot_cmd} successfully")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        print(e.stderr)
+        return None
