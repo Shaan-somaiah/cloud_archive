@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import zfs_snapshot
 from config import zpools, snapshot_name_prefix, clone_name_prefix
 import lock
@@ -75,4 +77,5 @@ def main():
 
         lock.unlock()
 
-main()
+if __name__ == "__main__":
+    main()
