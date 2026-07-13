@@ -16,7 +16,9 @@ def archive(archive_path):
         )
 
         end_time = time.perf_counter()      
-    
+
+        print(f"Finished archive of {archive_path} in {(end_time - star_time):.2f}s")
+
         result_vec = {
             "dataset_name": archive_path,
             "time_elapsed": end_time - star_time,

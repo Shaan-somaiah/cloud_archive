@@ -3,13 +3,17 @@
 import zfs_snapshot
 from config import zpools, snapshot_name_prefix, clone_name_prefix
 import lock
-from datetime import datetime
+import time
 import kopia
+import threading
 
 
 def main():
+
     lock.lock()
     print()
+
+    root_start_time = time.perf_counter()
 
     try:
 
@@ -54,15 +58,31 @@ def main():
                 archive_paths.append(f"/{full_clone_name}")
                 print()
         
-        results_vec = []
+        # results_vec = []
+
+        # for archive_path in archive_paths:
+        #     result = kopia.archive(archive_path)
+        #     results_vec.append(result)
+
+        #     print(f"Done archiving {archive_path} in {result['time_elapsed']:.2f}s")
+        #     print(f"Kopia stdout:")
+        #     print(f"{result['stdout']}")
+        #     print()
+
+        threads = []
 
         for archive_path in archive_paths:
-            result = kopia.archive(archive_path)
-            results_vec.append(result)
+            thread = threading.Thread(
+                target=kopia.archive,
+                args=(archive_path,)
+            )
+            threads.append(thread)
+            thread.start()
 
-            print(f"Done archiving {archive_path} in {result['time_elapsed']:.2f}s")
-            print(f"Kopia stdout:\n{result['stdout']}")
-            print()
+        for thread in threads:
+            thread.join()
+
+        print("All archives complete")
 
 
     finally:
@@ -74,6 +94,10 @@ def main():
         if created_snapshots_list:
             zfs_snapshot.destroy(created_snapshots_list)
         print()
+
+        root_end_time = time.perf_counter()
+
+        print(f"Total runtime {(root_end_time - root_start_time):.2f}s")
 
         lock.unlock()
 
