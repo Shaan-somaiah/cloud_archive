@@ -1,8 +1,7 @@
 zpools = {
     "dump/main": [
         "common",
-        "kube_vol",
-        "pbs"
+        "kube_vol"
     ]
 }
 
