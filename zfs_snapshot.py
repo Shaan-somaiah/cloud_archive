@@ -17,8 +17,7 @@ def getSnapshot(pool):
         else:
             snapshots_list=[]
             for line in list_snapshot_result.stdout.splitlines():
-                if snapshot_name_prefix in line:
-                    snapshots_list.append(line)
+                snapshots_list.append(line)
             
             if len(snapshots_list) == 0: 
                 print("No existing managed snapshot found")
@@ -46,8 +45,7 @@ def getClone(pool):
         else:
             clone_list=[]
             for line in list_clone_result.stdout.splitlines():
-                if clone_name_prefix in line:
-                    clone_list.append(line)
+                clone_list.append(line)
             
             if len(clone_list) == 0: 
                 print("No existing managed clones found")

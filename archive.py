@@ -24,18 +24,28 @@ def main():
             print(f"Checking if there are existing managed clones for pool {pool}")
             clone_list = zfs_snapshot.getClone(pool)
 
-            if clone_list:
-                print(f"Existing clones found: {clone_list}")
-                zfs_snapshot.destroy(clone_list)
+            clone_list_filtered = []
+            for clone in clone_list:
+                if clone_name_prefix in clone:
+                    clone_list_filtered.append(clone)
+
+            if clone_list_filtered:
+                print(f"Existing clones found: {clone_list_filtered}")
+                zfs_snapshot.destroy(clone_list_filtered)
         print()
 
         for pool,datasets in zpools.items():
             print(f"Checking if there are existing managed snapshots for pool {pool}")
             snapshot_list = zfs_snapshot.getSnapshot(pool)
 
-            if snapshot_list:
-                print(f"Existing snapshots found: {snapshot_list}")
-                zfs_snapshot.destroy(snapshot_list)
+            snapshot_list_filtered = []
+            for snapshot in snapshot_list:
+                if snapshot_name_prefix in snapshot:
+                    snapshot_list_filtered.append(snapshot)
+
+            if snapshot_list_filtered:
+                print(f"Existing snapshots found: {snapshot_list_filtered}")
+                zfs_snapshot.destroy(snapshot_list_filtered)
         print()
 
         archive_paths = []
