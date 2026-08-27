@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import zfs_snapshot
-from config import zpools, snapshot_name_prefix, clone_name_prefix
+from config import zpools_archive, snapshot_name_prefix, clone_name_prefix
 import lock
 import time
 import kopia
@@ -20,7 +20,7 @@ def main():
         created_snapshots_list = []
         created_clones_list = []
         
-        for pool,datasets in zpools.items():
+        for pool,datasets in zpools_archive.items():
             print(f"Checking if there are existing managed clones for pool {pool}")
             clone_list = zfs_snapshot.getClone(pool)
 
@@ -34,7 +34,7 @@ def main():
                 zfs_snapshot.destroy(clone_list_filtered)
         print()
 
-        for pool,datasets in zpools.items():
+        for pool,datasets in zpools_archive.items():
             print(f"Checking if there are existing managed snapshots for pool {pool}")
             snapshot_list = zfs_snapshot.getSnapshot(pool)
 
@@ -50,7 +50,7 @@ def main():
 
         archive_paths = []
 
-        for pool,datasets in zpools.items():
+        for pool,datasets in zpools_archive.items():
             for dataset in datasets:
                 ## Not including timestamp in snapshot name as it creates a seperate chain in kopia
                 snapshot_name = f"{snapshot_name_prefix}_{dataset}"
