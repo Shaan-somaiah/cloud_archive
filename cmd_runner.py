@@ -8,15 +8,15 @@ from abc import ABC, abstractmethod
 class ICmdRunner(ABC):
 
     @abstractmethod
-    def RunCmd(self, command):
+    def RunCmd(self, command: list[str]) -> subprocess.CompletedProcess :
         pass
 
 
 ## Run commands on the machine which invokes the methods
 class LocalCmdRunner(ICmdRunner):
 
-## No need for explictl constructor
-    def RunCmd(self, command):
+## No need for explict constructor
+    def RunCmd(self, command: list[str]) -> subprocess.CompletedProcess:
 
         return subprocess.run (
             command,
@@ -41,7 +41,7 @@ class RemoteCmdRunner(ICmdRunner):
         self.username = username
 
 
-    def RunCmd(self, command):
+    def RunCmd(self, command: list[str]) -> subprocess.CompletedProcess:
 
         return subprocess.run (
             [ self.ssh_exec, f"{self.username}@{self.remote_host}", *command ],
