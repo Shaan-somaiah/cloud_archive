@@ -4,7 +4,7 @@ from pathlib import Path
 
 lock_file = Path("/var/lock/kopia_backup.lock")
 
-def lock():
+def Lock(executable_name):
 
     if not lock_file.exists():
         print(f"Backup script not running, locking run with PID {str(os.getpid())}")
@@ -17,7 +17,7 @@ def lock():
 
         if current_pid != lock_file_pid:
             if Path(f"/proc/{lock_file_pid}/").exists():
-                if "archive.py" in Path(f"/proc/{lock_file_pid}/cmdline").read_text():
+                if executable_name in Path(f"/proc/{lock_file_pid}/cmdline").read_text():
                     print(f"Backup script already running with {lock_file_pid}, exiting this instance")
                     sys.exit(3)
         
@@ -26,7 +26,7 @@ def lock():
         print("Run locked")
                 
 
-def unlock():
+def Unlock():
 
     if not lock_file.exists():
         print("Lock file missing, panic")
