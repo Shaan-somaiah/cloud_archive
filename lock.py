@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-lock_file = Path("/var/lock/kopia_backup.lock")
+lock_file = Path("/var/lock/archive_replicate.lock")
 
 def Lock(executable_name):
 
