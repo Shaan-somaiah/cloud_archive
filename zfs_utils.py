@@ -67,4 +67,42 @@ class ZfsManager():
             print(f"GetDatasets failed for {zpool} with return code {e.returncode}")
             print(e.stderr)
             return None
-        
+
+###
+    def Destroy(self, full_dataset_name):
+
+        command = [ self.zfs_exec, "destroy", full_dataset_name ]
+
+        try:
+            print(f"Destroying dataset {full_dataset_name} !!")
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"Destroy dataset {full_dataset_name} failed with return code {e.returncode}")
+            print(e.stderr)
+            return None
+
+
+###
+    def CreateSnapshot(self, full_snapshot_name):
+
+        command = [ self.zfs_exec, "snapshot", full_snapshot_name ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"CreateSnapshot {full_snapshot_name} failed with return code {e.returncode}")
+            print(e.stderr)
+            return None
+
