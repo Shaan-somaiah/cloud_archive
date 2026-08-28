@@ -70,26 +70,23 @@ class ZfsManager():
 
         try:
             result = self.cmd_runner.RunCmd(command)
-            # print(result.stdout)
-
-            if "zpool does not exist" in result.stderr:
-                print(f"zpool supplied does not exist!")
-                return None
 
             dataset_list=[]
             for line in result.stdout.splitlines():
                 dataset_list.append(line)
 
             if len(dataset_list) == 0:
-                print(f"No datasets found for pool {zpool}")
-                return None
+                return []
 
             return dataset_list
 
         except subprocess.CalledProcessError as e:
-            print(f"GetDatasets failed for {zpool} with return code {e.returncode}")
-            print(e.stderr)
-            return None
+            if "dataset does not exist" in e.stderr:
+                return []
+            else:
+                print(f"GetAllDataset failed for {zpool} with return code {e.returncode}")
+                print(e.stderr)
+            return []
 
 ###
     def Destroy(self, full_dataset_name):
@@ -97,7 +94,6 @@ class ZfsManager():
         command = [ self.zfs_exec, "destroy", full_dataset_name ]
 
         try:
-            print(f"Destroying dataset {full_dataset_name} !!")
             result = self.cmd_runner.RunCmd(command)
 
             if result.returncode == 0:
@@ -108,8 +104,7 @@ class ZfsManager():
         except subprocess.CalledProcessError as e:
             print(f"Destroy dataset {full_dataset_name} failed with return code {e.returncode}")
             print(e.stderr)
-            return None
-
+            return False
 
 ###
     def CreateSnapshot(self, full_snapshot_name):
@@ -127,7 +122,7 @@ class ZfsManager():
         except subprocess.CalledProcessError as e:
             print(f"CreateSnapshot {full_snapshot_name} failed with return code {e.returncode}")
             print(e.stderr)
-            return None
+            return False
 
 ###
     def Clone(self, full_source_dataset_name, full_destination_dataset_name):
@@ -145,7 +140,7 @@ class ZfsManager():
         except subprocess.CalledProcessError as e:
             print(f"Cloning {full_source_dataset_name} to {full_destination_dataset_name} failed with return code {e.returncode}")
             print(e.stderr)
-            return None
+            return False
 
 ###
     def Rename(self, full_source_dataset_name, full_destination_dataset_name):
@@ -163,7 +158,7 @@ class ZfsManager():
         except subprocess.CalledProcessError as e:
             print(f"Renaming {full_source_dataset_name} to {full_destination_dataset_name} failed with return code {e.returncode}")
             print(e.stderr)
-            return None
+            return False
 
 ###
     def MarkReadOnly(self, full_dataset_name):
@@ -181,6 +176,6 @@ class ZfsManager():
         except subprocess.CalledProcessError as e:
             print(f"Setting {full_dataset_name} to readonly failed with return code {e.returncode}")
             print(e.stderr)
-            return None
+            return False
 
 ### Something to do send / recieve
