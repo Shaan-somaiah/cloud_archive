@@ -41,7 +41,7 @@ class ZfsManager():
             return None
 
 ###
-    def GetDatasets(self, zpool):
+    def GetDataset(self, zpool):
 
         command = [ self.zfs_exec, "list", "-H", "-o", "name", zpool, "-r" ]
 
@@ -106,3 +106,40 @@ class ZfsManager():
             print(e.stderr)
             return None
 
+###
+    def Clone(self, full_source_dataset_name, full_destination_dataset_name):
+
+        command = [ self.zfs_exec, "clone", full_source_dataset_name, full_destination_dataset_name ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"Cloning {full_source_dataset_name} to {full_destination_dataset_name} failed with return code {e.returncode}")
+            print(e.stderr)
+            return None
+
+###
+    def Rename(self, full_source_dataset_name, full_destination_dataset_name):
+
+        command = [ self.zfs_exec, "rename", full_source_dataset_name, full_destination_dataset_name ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"Renaming {full_source_dataset_name} to {full_destination_dataset_name} failed with return code {e.returncode}")
+            print(e.stderr)
+            return None
+
+### Something to do send / recieve
