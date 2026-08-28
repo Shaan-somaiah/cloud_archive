@@ -1,115 +1,111 @@
 #!/usr/bin/env python3
-
-import zfs_snapshot
-from config import zpools_archive, snapshot_name_prefix, clone_name_prefix
-import lock
-import time
+import os
+import zfs_utils
+import config
+import cmd_runner
 import kopia
-import threading
+import lock
+
+def MaybeDeleteExistingClones(zfs_manager, full_clone_name):
+
+    print(f"Checking if there are existing clones for {full_clone_name}")
+
+    clone_list = zfs_manager.GetDataset(full_clone_name)
+
+    if not len(clone_list) == 0:
+        filtered_clone_list = []
+        for clone in clone_list:
+            if not config.archive_clone_name_prefix in clone:
+                clone_list.remove(clone)
+
+    if not len(clone_list) == 0:
+        for clone in clone_list:
+            print(f"Found existing managed clone {clone}, deleting it")
+            zfs_manager.Destroy(clone)
+            print(f"Deleted {clone} successfully")
+            return
+    else:
+        print(f"No existing managed clone found for {full_clone_name}")
+
+
+def MaybeDeleteExistingSnapshots(zfs_manager, full_snapshot_name):
+
+    print(f"Checking if there are existing snapshots for {full_snapshot_name}")
+
+    snapshot_list = zfs_manager.GetSnapshot(full_snapshot_name)
+
+    print(f"List = {snapshot_list}")
+
+    if not len(snapshot_list) == 0:
+        filtered_snapshot_list = []
+        for snapshot in snapshot_list:
+            if not config.archive_snapshot_name_prefix in snapshot:
+                snapshot_list.remove(snapshot)
+
+    if not len(snapshot_list) == 0:
+        for snapshot in snapshot_list:
+            print(f"Found existing managed snapshot {snapshot}, deleting it")
+            zfs_manager.Destroy(snapshot)
+            print(f"Deleted {snapshot} successfully")
+            return
+    else:
+        print(f"No existing managed snapshot found for {full_snapshot_name}")
 
 
 def main():
 
-    lock.lock()
+    ## Lock so only one instance of this script runs at time
+    executable_name = os.path.basename(__file__)
+    lock.Lock(executable_name)
     print()
 
-    root_start_time = time.perf_counter()
+    ## Helpers to run local and remote command via ssh
+    local_cmd_runner  = cmd_runner.LocalCmdRunner()
 
-    try:
+    ## zfs helper, takes a cmd runner
+    zfs_local_manager  = zfs_utils.ZfsManager(local_cmd_runner)
 
-        created_snapshots_list = []
-        created_clones_list = []
-        
-        for pool,datasets in zpools_archive.items():
-            print(f"Checking if there are existing managed clones for pool {pool}")
-            clone_list = zfs_snapshot.getClone(pool)
+    for zpool, datasets in config.datasets.items():
+        for dataset in datasets:
+            if dataset in config.datasets_to_archive:
 
-            clone_list_filtered = []
-            for clone in clone_list:
-                if clone_name_prefix in clone:
-                    clone_list_filtered.append(clone)
+                ## Generate names
+                full_dataset_name   = f"{zpool}/{dataset}"
+                full_snapshot_name  = f"{full_dataset_name}@{config.archive_snapshot_name_prefix}"
+                full_clone_name     = f"{full_dataset_name}_{config.archive_clone_name_prefix}"
 
-            if clone_list_filtered:
-                print(f"Existing clones found: {clone_list_filtered}")
-                zfs_snapshot.destroy(clone_list_filtered)
-        print()
-
-        for pool,datasets in zpools_archive.items():
-            print(f"Checking if there are existing managed snapshots for pool {pool}")
-            snapshot_list = zfs_snapshot.getSnapshot(pool)
-
-            snapshot_list_filtered = []
-            for snapshot in snapshot_list:
-                if snapshot_name_prefix in snapshot:
-                    snapshot_list_filtered.append(snapshot)
-
-            if snapshot_list_filtered:
-                print(f"Existing snapshots found: {snapshot_list_filtered}")
-                zfs_snapshot.destroy(snapshot_list_filtered)
-        print()
-
-        archive_paths = []
-
-        for pool,datasets in zpools_archive.items():
-            for dataset in datasets:
-                ## Not including timestamp in snapshot name as it creates a seperate chain in kopia
-                snapshot_name = f"{snapshot_name_prefix}_{dataset}"
-                full_dataset_path = f"{pool}/{dataset}"
-                full_snapshot_name = f"{full_dataset_path}@{snapshot_name}"
-                full_clone_name = f"{pool}/{clone_name_prefix}_{dataset}"
-                zfs_snapshot.createSnapshot(full_snapshot_name)
-                created_snapshots_list.append(full_snapshot_name)
-                ## There seems to be some bug within kopia/zfs where kopia cannot enumerate the contents of snapshot directory within .zfs virual filesystem
-                ## on the first attempt, this causes kopia to miss items during archival. Cloning the snapshot to a read only dataset will evade this issue as
-                ## a read only dataset is mounted as a regular zfs filesystem
-
-                zfs_snapshot.cloneSnapshot(full_snapshot_name, full_clone_name)
-                created_clones_list.append(full_clone_name)
-                archive_paths.append(f"/{full_clone_name}")
+                ## Prearchival tasks
+                MaybeDeleteExistingClones(zfs_local_manager, full_clone_name)
                 print()
-        
-        # results_vec = []
+                MaybeDeleteExistingSnapshots(zfs_local_manager, full_snapshot_name)
+                print()
 
-        # for archive_path in archive_paths:
-        #     result = kopia.archive(archive_path)
-        #     results_vec.append(result)
+                zfs_local_manager.CreateSnapshot(full_snapshot_name)
+                print(f"Created snapshot {full_snapshot_name}")
+                print()
 
-        #     print(f"Done archiving {archive_path} in {result['time_elapsed']:.2f}s")
-        #     print(f"Kopia stdout:")
-        #     print(f"{result['stdout']}")
-        #     print()
-
-        threads = []
-
-        for archive_path in archive_paths:
-            thread = threading.Thread(
-                target=kopia.archive,
-                args=(archive_path,)
-            )
-            threads.append(thread)
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
-        print("All archives complete")
+                ## Clone snapshot to a readonly clone, sometimes kopia cannot enumerate snapshot within .zfs directly
+                zfs_local_manager.Clone(full_snapshot_name, full_clone_name)
+                print(f"Cloned {full_snapshot_name} to {full_clone_name}")
+                print()
+                zfs_local_manager.MarkReadOnly(full_clone_name)
+                print(f"Marked {full_clone_name} as read only")
+                print()
 
 
-    finally:
+                ## Archival task
+                print(f"Going to archive {full_clone_name}")
+                print()
+                ## Kopia takes filesystem path as parameter
+                kopia.archive(f"/{full_clone_name}")
 
-        if created_clones_list:
-            zfs_snapshot.destroy(created_clones_list)
-        print()
-        
-        if created_snapshots_list:
-            zfs_snapshot.destroy(created_snapshots_list)
-        print()
+                ## Post archival task
+                MaybeDeleteExistingClones(zfs_local_manager, full_clone_name)   
+                print()
+                MaybeDeleteExistingSnapshots(zfs_local_manager, full_snapshot_name)
+                print()
 
-        root_end_time = time.perf_counter()
-
-        print(f"Total runtime {(root_end_time - root_start_time):.2f}s")
-
-        lock.unlock()
+    lock.Unlock()
 
 if __name__ == "__main__":
     main()
