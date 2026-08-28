@@ -13,8 +13,14 @@ class KopiaManager():
         command = [ self.kopia_exec, "snapshot", "create", full_snapshot_path ]
 
         try:
-            self.cmd_runner.RunCmd(command)
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
 
         except subprocess.CalledProcessError as e:
             print(f"Command failed with exit code {e.returncode}")
             print(e.stderr)
+            return False
