@@ -43,6 +43,9 @@ class RemoteCmdRunner(ICmdRunner):
 
     def RunCmd(self, command: list[str]) -> subprocess.CompletedProcess:
 
+        # command = ["hostname"]
+        # print(f"Trying to run {self.ssh_exec} {self.username}@{self.remote_host} {command}")
+
         return subprocess.run (
             [ self.ssh_exec, f"{self.username}@{self.remote_host}", *command ],
             capture_output=True,

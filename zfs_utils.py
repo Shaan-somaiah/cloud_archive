@@ -12,13 +12,14 @@ class ZfsManager():
     def __init__(self, cmd_runner: ICmdRunner):
         self.cmd_runner = cmd_runner
 
-
+###
     def GetSnapshot(self, full_dataset_name):
 
         command = [ self.zfs_exec, "list", "-H", "-o", "name", "-t", "snapshot", full_dataset_name ]
         
         try:
             result = self.cmd_runner.RunCmd(command)
+            # print(result.stdout)
 
             if "dataset does not exist" in result.stderr:
                 print(f"Dataset supplied does not exist!")
@@ -38,3 +39,32 @@ class ZfsManager():
             print(f"GetSnapshot failed for {full_dataset_name} with return code {e.returncode}")
             print(e.stderr)
             return None
+
+###
+    def GetDatasets(self, zpool):
+
+        command = [ self.zfs_exec, "list", "-H", "-o", "name", zpool, "-r" ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+            # print(result.stdout)
+
+            if "zpool does not exist" in result.stderr:
+                print(f"zpool supplied does not exist!")
+                return None
+
+            dataset_list=[]
+            for line in result.stdout.splitlines():
+                dataset_list.append(line)
+
+            if len(dataset_list) == 0:
+                print(f"No datasets found for pool {zpool}")
+                return None
+
+            return dataset_list
+
+        except subprocess.CalledProcessError as e:
+            print(f"GetDatasets failed for {zpool} with return code {e.returncode}")
+            print(e.stderr)
+            return None
+        
