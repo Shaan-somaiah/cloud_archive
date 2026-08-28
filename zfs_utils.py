@@ -13,35 +13,58 @@ class ZfsManager():
         self.cmd_runner = cmd_runner
 
 ###
-    def GetSnapshot(self, full_dataset_name):
+    def GetSnapshot(self, full_snapshot_name):
 
-        command = [ self.zfs_exec, "list", "-H", "-o", "name", "-t", "snapshot", full_dataset_name ]
+        command = [ self.zfs_exec, "list", "-H", "-o", "name", "-t", "snapshot", full_snapshot_name ]
         
         try:
             result = self.cmd_runner.RunCmd(command)
             # print(result.stdout)
-
-            if "dataset does not exist" in result.stderr:
-                print(f"Dataset supplied does not exist!")
-                return None
 
             snapshots_list=[]
             for line in result.stdout.splitlines():
                 snapshots_list.append(line)
 
             if len(snapshots_list) == 0:
-                print(f"No snapshots found for dataset {full_dataset_name}")
-                return None
+                return []
 
             return snapshots_list
 
         except subprocess.CalledProcessError as e:
-            print(f"GetSnapshot failed for {full_dataset_name} with return code {e.returncode}")
-            print(e.stderr)
-            return None
+            if "dataset does not exist" in e.stderr:
+                return []
+            else:
+                print(f"GetSnapshot failed for {full_snapshot_name} with return code {e.returncode}")
+                print(e.stderr)
+            return []
 
 ###
-    def GetDataset(self, zpool):
+    def GetDataset(self, full_dataset_name):
+
+        command = [ self.zfs_exec, "list", "-H", "-o", "name", full_dataset_name ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+
+            dataset_list=[]
+            for line in result.stdout.splitlines():
+                dataset_list.append(line)
+
+            if len(dataset_list) == 0:
+                return []
+
+            return dataset_list
+
+        except subprocess.CalledProcessError as e:
+            if "dataset does not exist" in e.stderr:
+                return []
+            else:
+                print(f"GetDataset failed for {full_dataset_name} with return code {e.returncode}")
+                print(e.stderr)
+            return []
+
+###
+    def GetAllDataset(self, zpool):
 
         command = [ self.zfs_exec, "list", "-H", "-o", "name", zpool, "-r" ]
 
@@ -139,6 +162,24 @@ class ZfsManager():
 
         except subprocess.CalledProcessError as e:
             print(f"Renaming {full_source_dataset_name} to {full_destination_dataset_name} failed with return code {e.returncode}")
+            print(e.stderr)
+            return None
+
+###
+    def MarkReadOnly(self, full_dataset_name):
+
+        command = [ self.zfs_exec, "set", "readonly=on", full_dataset_name ]
+
+        try:
+            result = self.cmd_runner.RunCmd(command)
+
+            if result.returncode == 0:
+                return True
+
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"Setting {full_dataset_name} to readonly failed with return code {e.returncode}")
             print(e.stderr)
             return None
 
