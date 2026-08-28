@@ -1,35 +1,20 @@
-from config import kopia
+from cmd_runner import ICmdRunner
 import subprocess
-import time
 
-def archive(archive_path):
-    try:
-        
-        star_time = time.perf_counter()
-        print(f"Starting archive of {archive_path}")
+class KopiaManager():
 
-        archive_result = subprocess.run(
-            [ kopia, "snapshot", "create", archive_path ],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+    kopia_exec = "/usr/bin/kopia"
 
-        end_time = time.perf_counter()      
+    def __init__(self, cmd_runner: ICmdRunner):
+        self.cmd_runner = cmd_runner
 
-        print(f"Finished archive of {archive_path} in {(end_time - star_time):.2f}s")
+    def CreateSnapshot(self, full_snapshot_path):
 
-        result_vec = {
-            "dataset_name": archive_path,
-            "time_elapsed": end_time - star_time,
-            "stdout" : archive_result.stdout,
-            "stderr" : archive_result.stderr,
-            "returncode" : archive_result.returncode
-        }
+        command = [ self.kopia_exec, "snapshot", "create", full_snapshot_path ]
 
-        return result_vec
-        # print(f"Inside kopia.archive, trying to run kopia snapshot create {archive_path}")
+        try:
+            self.cmd_runner.RunCmd(command)
 
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed with exit code {e.returncode}")
-        print(e.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with exit code {e.returncode}")
+            print(e.stderr)

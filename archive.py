@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os
-import zfs_utils
+from zfs_utils import ZfsManager
 import config
-import cmd_runner
-import kopia
+from cmd_runner import LocalCmdRunner
+from kopia import KopiaManager
 import lock
 
 def MaybeDeleteExistingClones(zfs_manager, full_clone_name):
@@ -60,10 +60,13 @@ def main():
     print()
 
     ## Helpers to run local and remote command via ssh
-    local_cmd_runner  = cmd_runner.LocalCmdRunner()
+    local_cmd_runner  = LocalCmdRunner()
 
     ## zfs helper, takes a cmd runner
-    zfs_local_manager  = zfs_utils.ZfsManager(local_cmd_runner)
+    zfs_local_manager  = ZfsManager(local_cmd_runner)
+
+    ## kopia helper
+    kopia_local_helper = KopiaManager(local_cmd_runner)
 
     for zpool, datasets in config.datasets.items():
         for dataset in datasets:
@@ -97,7 +100,7 @@ def main():
                 print(f"Going to archive {full_clone_name}")
                 print()
                 ## Kopia takes filesystem path as parameter
-                kopia.archive(f"/{full_clone_name}")
+                kopia_local_helper.CreateSnapshot(f"/{full_clone_name}")
 
                 ## Post archival task
                 MaybeDeleteExistingClones(zfs_local_manager, full_clone_name)   
